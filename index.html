@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Space Shooter</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: black;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    canvas {
+      border: 1px solid white;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+  <script>
+    // Canvas und Kontexteinstellungen
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Canvas-Größe anpassen
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    // Spielobjekte und Variablen
+    const spaceship = {
+      x: canvas.width / 2,
+      y: canvas.height - 60,
+      width: 50,
+      height: 50,
+      speed: 5,
+      dx: 0
+    };
+
+    const lasers = [];
+    const enemies = [];
+    let gameOver = false;
+    let score = 0;
+
+    // Raumschiff zeichnen
+    function drawSpaceship() {
+      ctx.fillStyle = 'white';
+      ctx.fillRect(spaceship.x, spaceship.y, spaceship.width, spaceship.height);
+    }
+
+    // Lasergeschosse zeichnen
+    function drawLasers() {
+      lasers.forEach((laser, index) => {
+        ctx.fillStyle = 'red';
+        ctx.fillRect(laser.x, laser.y, laser.width, laser.height);
+        laser.y -= laser.speed;
+
+        // Entfernen von Lasern, die den Bildschirm verlassen haben
+        if (laser.y < 0) {
+          lasers.splice(index, 1);
+        }
+      });
+    }
+
+    // Feinde zeichnen
+    function drawEnemies() {
+      enemies.forEach((enemy, index) => {
+        ctx.fillStyle = 'green';
+        ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+        enemy.y += enemy.speed;
+
+        // Entfernen von Feinden, die den Bildschirm verlassen haben
+        if (enemy.y > canvas.height) {
+          enemies.splice(index, 1);
+        }
+      });
+    }
+
+    // Feind-Spawn-Mechanismus
+    function createEnemy() {
+      const enemyWidth = 40;
+      const enemyHeight = 40;
+      const x = Math.random() * (canvas.width - enemyWidth);
+      const y = -enemyHeight;
+      const speed = 1 + Math.random() * 2;
+      enemies.push({ x, y, width: enemyWidth, height: enemyHeight, speed });
+    }
+
+    // Kollisionserkennung für Laser und Feinde
+    function checkCollisions() {
+      lasers.forEach((laser, laserIndex) => {
+        enemies.forEach((enemy, enemyIndex) => {
+          if (laser.x < enemy.x + enemy.width && laser.x + laser.width > enemy.x &&
+              laser.y < enemy.y + enemy.height && laser.y + laser.height > enemy.y) {
+
+            // Feind zerstört und Laser entfernt
+            enemies.splice(enemyIndex, 1);
+            lasers.splice(laserIndex, 1);
+            score += 10;
+          }
+        });
+      });
+    }
+
+    // Steuerung des Raumschiffs
+    function moveSpaceship() {
+      spaceship.x += spaceship.dx;
+
+      // Begrenzungen für das Raumschiff
+      if (spaceship.x < 0) spaceship.x = 0;
+      if (spaceship.x + spaceship.width > canvas.width) spaceship.x = canvas.width - spaceship.width;
+    }
+
+    // Steuerung mit Tasten
+    function keyDownHandler(e) {
+      if (e.key === 'ArrowLeft' || e.key === 'a') {
+        spaceship.dx = -spaceship.speed;
+      } else if (e.key === 'ArrowRight' || e.key === 'd') {
+        spaceship.dx = spaceship.speed;
+      } else if (e.key === ' ' || e.key === 'Enter') {
+        shootLaser();
+      }
+    }
+
+    function keyUpHandler(e) {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'a' || e.key === 'd') {
+        spaceship.dx = 0;
+      }
+    }
+
+    // Laserschuss abfeuern
+    function shootLaser() {
+      const laserWidth = 5;
+      const laserHeight = 20;
+      const laserX = spaceship.x + spaceship.width / 2 - laserWidth / 2;
+      const laserY = spaceship.y;
+      const speed = 5;
+      lasers.push({ x: laserX, y: laserY, width: laserWidth, height: laserHeight, speed });
+    }
+
+    // Spiel starten
+    function startGame() {
+      if (gameOver) {
+        ctx.fillStyle = 'white';
+        ctx.font = '30px Arial';
+        ctx.fillText('Game Over!', canvas.width / 2 - 80, canvas.height / 2);
+        ctx.fillText('Score: ' + score, canvas.width / 2 - 60, canvas.height / 2 + 40);
+        return;
+      }
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Spielfunktionen
+      drawSpaceship();
+      drawLasers();
+      drawEnemies();
+      moveSpaceship();
+      checkCollisions();
+
+      // Feinde generieren
+      if (Math.random() < 0.02) {
+        createEnemy();
+      }
+
+      // Spiel fortsetzen
+      requestAnimationFrame(startGame);
+    }
+
+    // Event-Listener für Tasten
+    window.addEventListener('keydown', keyDownHandler, false);
+    window.addEventListener('keyup', keyUpHandler, false);
+
+    // Spiel starten
+    startGame();
+  </script>
+</body>
+</html>
